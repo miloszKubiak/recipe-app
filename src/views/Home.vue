@@ -1,12 +1,21 @@
 <template>
   <div class="home">
-    <h1><i class="fas fa-cookie-bite"></i> My Recipes</h1>
+    <h1>
+      <i class="fas fa-utensils"></i> My Recipes
+      <i class="fas fa-pepper-hot"></i>
+    </h1>
     <button @click="togglePopup">Add new Recipe</button>
     <div class="recipes">
-      <div class="card">
-        <h2>title1</h2>
-        <p>description</p>
-        <button>View Recipe</button>
+      <div
+        class="card"
+        v-for="recipe in $store.state.recipes"
+        :key="recipe.slug"
+      >
+        <h2>{{ recipe.title }}</h2>
+        <p>{{ recipe.description }}</p>
+        <router-link :to="`/recipe/${recipe.slug}`">
+          <button>View Recipe</button>
+        </router-link>
       </div>
     </div>
   </div>
@@ -18,28 +27,28 @@
       <form @submit.prevent="addNewRecipe">
         <div class="group">
           <label>Title</label>
-          <input type="text" />
+          <input type="text" v-model="newRecipe.title" />
         </div>
 
         <div class="group">
           <label>Description</label>
-          <textarea></textarea>
+          <textarea v-model="newRecipe.description"></textarea>
         </div>
 
         <div class="group">
           <label>Ingredients</label>
-          <div class="ingredient">
-            <input type="text" />
+          <div class="ingredient" v-for="i in newRecipe.ingredientRows" :key="i">
+            <input type="text" v-model="newRecipe.ingredients[i - 1]"/>
           </div>
-          <button type="button">Add Ingredient</button>
+          <button type="button" @click="addNewIngredient">Add Ingredient</button>
         </div>
 
         <div class="group">
           <label>Method</label>
-          <div class="method">
-            <textarea></textarea>
+          <div class="method" v-for="i in newRecipe.methodRows" :key="i">
+            <textarea v-model="newRecipe.method[i - 1]"></textarea>
           </div>
-          <button>Add Step</button>
+          <button type="button" @click="addNewStep">Add Step</button>
         </div>
 
         <button type="submit">Add Recipe</button>
@@ -51,6 +60,7 @@
 
 <script>
 import { ref } from "vue";
+import { useStore } from "vuex";
 
 export default {
   name: "Home",
@@ -65,14 +75,46 @@ export default {
     });
 
     const popupOpen = ref(false);
+    const store = useStore();
+
     const togglePopup = () => {
       popupOpen.value = !popupOpen.value;
+    };
+    const addNewIngredient = () => {
+      newRecipe.value.ingredientRows++;
+    };
+    const addNewStep = () => {
+      newRecipe.value.methodRows++;
+    };
+    const addNewRecipe = () => {
+      newRecipe.value.slug = newRecipe.value.title.toLowerCase().replace(/\s/g, '-');
+
+      if (!newRecipe.value.slug) {
+        alert("Please enter a title");
+        return;
+      }
+
+      store.commit('ADD_RECIPE', { ...newRecipe.value });
+
+      newRecipe.value = {
+        title: "",
+        description: "",
+        ingredients: [],
+        method: [],
+        ingredientRows: 1,
+        methodRows: 1,
+      };
+
+      togglePopup();
     }
 
     return {
       newRecipe,
+      addNewRecipe,
       togglePopup,
       popupOpen,
+      addNewIngredient,
+      addNewStep,
     };
   },
 };
@@ -86,6 +128,14 @@ export default {
   padding: 1rem;
 }
 
+.fa-pepper-hot {
+  color: red;
+}
+
+.fa-utensils {
+  color: gray;
+}
+
 h1 {
   font-size: 3rem;
   margin-bottom: 3rem;
@@ -93,15 +143,16 @@ h1 {
 
 .recipes {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .recipes .card {
   padding: 1.5rem;
   background-color: #97bfb4;
   border-radius: 5px;
-  margin: 1rem;
+  margin: 1.5rem;
 }
 
 .recipes .card h2 {
@@ -111,7 +162,7 @@ h1 {
 
 .recipes .card p {
   font-size: 1.1rem;
-  line-height: 2;
+  line-height: 1.5;
   margin-bottom: 1rem;
 }
 
@@ -124,7 +175,6 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
   background-color: rgba(0, 0, 0, 0.5);
 }
 
